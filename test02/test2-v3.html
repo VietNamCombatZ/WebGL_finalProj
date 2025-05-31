@@ -1,0 +1,225 @@
+<!-- đã bổ sung vẽ khối lập phương với độ dài cạnh nhập vào có chức năng tịnh tiến, đối xứng, tỉ lệ-->
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Khối lập phương - Biến đổi</title>
+  <style>
+    canvas {
+      background: black;
+      display: block;
+      margin: auto;
+    }
+    .controls {
+      text-align: center;
+      margin-top: 10px;
+    }
+    .controls input {
+      width: 60px;
+      margin: 4px;
+    }
+    .controls div {
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="glcanvas" width="640" height="480"></canvas>
+
+  <div class="controls">
+    <div>
+      Cạnh a: <input type="number" id="edgeLength" value="1" step="0.1" min="0.1">
+    </div>
+    <div>
+      Tx: <input type="number" id="tx" value="0" step="0.1">
+      Ty: <input type="number" id="ty" value="0" step="0.1">
+      Tz: <input type="number" id="tz" value="0" step="0.1">
+    </div>
+    <div>
+      Tỉ lệ s: <input type="number" id="scale" value="1" step="0.1" min="0.1">
+    </div>
+    <div>
+      Đối xứng qua:
+      <label><input type="radio" name="mirrorPlane" value="Oxy" checked>Oxy</label>
+      <label><input type="radio" name="mirrorPlane" value="Oxz">Oxz</label>
+      <label><input type="radio" name="mirrorPlane" value="Oyz">Oyz</label>
+    </div>
+    <div>
+      <button onclick="drawScene()">Vẽ khối lập phương</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gl-matrix@2.8.1/dist/gl-matrix-min.js"></script>
+  <script>
+    const canvas = document.getElementById("glcanvas");
+    const gl = canvas.getContext("webgl");
+    if (!gl) alert("WebGL không được hỗ trợ!");
+
+    const vsSource = `
+      attribute vec3 aPosition;
+      uniform mat4 uMatrix;
+      void main() {
+        gl_Position = uMatrix * vec4(aPosition, 1.0);
+      }
+    `;
+    const fsSource = `
+      precision mediump float;
+      uniform vec3 uColor;
+      void main() {
+        gl_FragColor = vec4(uColor, 1.0);
+      }
+    `;
+
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+      }
+      return shader;
+    }
+
+    const vShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    const program = gl.createProgram();
+    gl.attachShader(program, vShader);
+    gl.attachShader(program, fShader);
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    const aPosition = gl.getAttribLocation(program, "aPosition");
+    const uColor = gl.getUniformLocation(program, "uColor");
+    const uMatrix = gl.getUniformLocation(program, "uMatrix");
+
+    const axisVertices = new Float32Array([
+      0,0,0, 1,0,0,
+      0,0,0, 0,1,0,
+      0,0,0, 0,0,1,
+    ]);
+    const axisBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, axisBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, axisVertices, gl.STATIC_DRAW);
+
+    const cubeIndices = new Uint16Array([
+      0,1,2, 0,2,3, 4,5,6, 4,6,7,
+      8,9,10, 8,10,11, 12,13,14, 12,14,15,
+      16,17,18, 16,18,19, 20,21,22, 20,22,23
+    ]);
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cubeIndices, gl.STATIC_DRAW);
+
+    const faceColors = [
+      [0.7, 0.4, 0.7], [0.8, 0.6, 0.5], [0.2, 0.4, 0.7],
+      [0.5, 0.4, 0.3], [0.5, 0.6, 0.2], [0.7, 0.3, 0.4],
+    ];
+
+    const projection = mat4.create();
+    const view = mat4.create();
+    const baseMatrix = mat4.create();
+    mat4.perspective(projection, Math.PI / 4, canvas.width / canvas.height, 0.1, 100);
+    mat4.lookAt(view, [5, 5, 5], [0, 0, 0], [0, 1, 0]);
+    mat4.multiply(baseMatrix, projection, view);
+
+    function createCubeVertices(a) {
+      const h = a / 2;
+      return new Float32Array([
+        -h,-h, h,  h,-h, h,  h, h, h, -h, h, h,
+        -h,-h,-h, -h, h,-h,  h, h,-h,  h,-h,-h,
+        -h, h,-h, -h, h, h,  h, h, h,  h, h,-h,
+        -h,-h,-h,  h,-h,-h,  h,-h, h, -h,-h, h,
+         h,-h,-h,  h, h,-h,  h, h, h,  h,-h, h,
+        -h,-h,-h, -h,-h, h, -h, h, h, -h, h,-h
+      ]);
+    }
+
+    function drawScene() {
+      let a = parseFloat(document.getElementById("edgeLength").value);
+      let tx = parseFloat(document.getElementById("tx").value);
+      let ty = parseFloat(document.getElementById("ty").value);
+      let tz = parseFloat(document.getElementById("tz").value);
+      let s = parseFloat(document.getElementById("scale").value);
+      const mirrorPlane = document.querySelector('input[name="mirrorPlane"]:checked').value;
+
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.DEPTH_TEST);
+
+      // Vẽ trục tọa độ
+      gl.bindBuffer(gl.ARRAY_BUFFER, axisBuffer);
+      gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(aPosition);
+      gl.uniformMatrix4fv(uMatrix, false, baseMatrix);
+      gl.uniform3f(uColor, 1, 0, 0); gl.drawArrays(gl.LINES, 0, 2);
+      gl.uniform3f(uColor, 0, 1, 0); gl.drawArrays(gl.LINES, 2, 2);
+      gl.uniform3f(uColor, 0, 0, 1); gl.drawArrays(gl.LINES, 4, 2);
+
+      // Tạo ma trận biến đổi
+      const modelMatrix = mat4.create();
+      mat4.translate(modelMatrix, modelMatrix, [tx, ty, tz]);
+      mat4.scale(modelMatrix, modelMatrix, [s, s, s]);
+
+      // Đối xứng qua mặt phẳng
+      //v1
+    //   const mirrorMatrix = mat4.create();
+    //   if (mirrorPlane === "Oxy") {
+    //     mat4.scale(mirrorMatrix, mirrorMatrix, [1, 1, -1]);
+    //   } else if (mirrorPlane === "Oxz") {
+    //     mat4.scale(mirrorMatrix, mirrorMatrix, [1, -1, 1]);
+    //   } else if (mirrorPlane === "Oyz") {
+    //     mat4.scale(mirrorMatrix, mirrorMatrix, [-1, 1, 1]);
+    //   }
+
+    //   mat4.multiply(modelMatrix, modelMatrix, mirrorMatrix);
+
+    //v2
+    // Áp dụng đối xứng quanh vị trí đã tịnh tiến
+if (mirrorPlane) {
+  const preTranslate = mat4.create();
+  const postTranslate = mat4.create();
+  const reflect = mat4.create();
+
+  mat4.translate(preTranslate, preTranslate, [-tx, -ty, -tz]);
+  mat4.translate(postTranslate, postTranslate, [tx, ty, tz]);
+
+  if (mirrorPlane === "Oxy") {
+    mat4.scale(reflect, reflect, [1, 1, -1]);
+  } else if (mirrorPlane === "Oxz") {
+    mat4.scale(reflect, reflect, [1, -1, 1]);
+  } else if (mirrorPlane === "Oyz") {
+    mat4.scale(reflect, reflect, [-1, 1, 1]);
+  }
+
+  // modelMatrix = translate_back * reflect * translate_to_origin * modelMatrix
+  mat4.multiply(modelMatrix, preTranslate, modelMatrix);
+  mat4.multiply(modelMatrix, reflect, modelMatrix);
+  mat4.multiply(modelMatrix, postTranslate, modelMatrix);
+}
+
+
+      const finalMatrix = mat4.create();
+      mat4.multiply(finalMatrix, baseMatrix, modelMatrix);
+      gl.uniformMatrix4fv(uMatrix, false, finalMatrix);
+
+      // Tạo khối lập phương và vẽ
+      const cubeVertices = createCubeVertices(a);
+      const cubeBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, cubeBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, cubeVertices, gl.STATIC_DRAW);
+      gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(aPosition);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+      for (let i = 0; i < 6; i++) {
+        gl.uniform3fv(uColor, faceColors[i]);
+        gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, i * 6 * 2);
+      }
+    }
+
+    drawScene(); // Vẽ mặc định khi tải trang
+  </script>
+</body>
+</html>
+

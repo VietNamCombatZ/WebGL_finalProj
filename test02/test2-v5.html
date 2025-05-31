@@ -1,0 +1,176 @@
+<!-- thử nghiệm chỉnh sửa đối xứng của v4 -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>WebGL Cube Transformations</title>
+  <style>
+    canvas { border: 1px solid black; }
+    button, select, input { margin: 5px; }
+  </style>
+</head>
+<body>
+  <h3>Biến đổi hình lập phương</h3>
+  <label>Tx: <input type="number" id="tx" value="0" /></label>
+  <label>Ty: <input type="number" id="ty" value="0" /></label>
+  <label>Tz: <input type="number" id="tz" value="0" /></label>
+  <button onclick="translateCube()">Tịnh tiến</button><br>
+
+  <label>Scale: <input type="number" id="scaleFactor" value="1" step="0.1" /></label>
+  <button onclick="scaleCube()">Tỉ lệ</button><br>
+
+  <label>Chọn mặt phẳng đối xứng:
+    <select id="mirrorPlane">
+      <option value="Oxy">Oxy</option>
+      <option value="Oxz">Oxz</option>
+      <option value="Oyz">Oyz</option>
+    </select>
+  </label>
+  <button onclick="mirrorCube()">Đối xứng</button><br>
+
+  <canvas id="glCanvas" width="500" height="500"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
+  <script >
+    let gl, program;
+let modelMatrix = mat4.create();
+let tx = 0, ty = 0, tz = 0;
+
+window.onload = () => {
+  const canvas = document.getElementById("glCanvas");
+  gl = canvas.getContext("webgl");
+
+  const vertexShaderSource = `
+    attribute vec4 aPosition;
+    uniform mat4 uModelMatrix;
+    void main() {
+      gl_Position = uModelMatrix * aPosition;
+    }
+  `;
+  const fragmentShaderSource = `
+    precision mediump float;
+    void main() {
+      gl_FragColor = vec4(0.2, 0.6, 1.0, 1.0);
+    }
+  `;
+
+  const vs = createShader(gl.VERTEX_SHADER, vertexShaderSource);
+  const fs = createShader(gl.FRAGMENT_SHADER, fragmentShaderSource);
+  program = createProgram(vs, fs);
+  gl.useProgram(program);
+
+  drawScene();
+};
+
+function createShader(type, source) {
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  return shader;
+}
+
+function createProgram(vs, fs) {
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  return program;
+}
+
+function drawScene() {
+  gl.clearColor(1, 1, 1, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);
+
+  const vertices = new Float32Array([
+    // front
+    -0.5, -0.5,  0.5,
+     0.5, -0.5,  0.5,
+     0.5,  0.5,  0.5,
+    -0.5,  0.5,  0.5,
+    // back
+    -0.5, -0.5, -0.5,
+     0.5, -0.5, -0.5,
+     0.5,  0.5, -0.5,
+    -0.5,  0.5, -0.5
+  ]);
+
+  const indices = new Uint16Array([
+    0, 1, 2,  2, 3, 0,    // front
+    1, 5, 6,  6, 2, 1,    // right
+    5, 4, 7,  7, 6, 5,    // back
+    4, 0, 3,  3, 7, 4,    // left
+    3, 2, 6,  6, 7, 3,    // top
+    4, 5, 1,  1, 0, 4     // bottom
+  ]);
+
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+  const aPosition = gl.getAttribLocation(program, "aPosition");
+  gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(aPosition);
+
+  const indexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+
+  const uModelMatrix = gl.getUniformLocation(program, "uModelMatrix");
+  gl.uniformMatrix4fv(uModelMatrix, false, modelMatrix);
+
+  gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+}
+
+// ==== CÁC CHỨC NĂNG BIẾN ĐỔI ====
+
+function translateCube() {
+  tx = parseFloat(document.getElementById("tx").value);
+  ty = parseFloat(document.getElementById("ty").value);
+  tz = parseFloat(document.getElementById("tz").value);
+
+  mat4.identity(modelMatrix);
+  mat4.translate(modelMatrix, modelMatrix, [tx, ty, tz]);
+  drawScene();
+}
+
+function scaleCube() {
+  const scale = parseFloat(document.getElementById("scaleFactor").value);
+  const center = [tx, ty, tz];
+
+  const temp = mat4.create();
+  mat4.translate(temp, temp, center);
+  mat4.scale(temp, temp, [scale, scale, scale]);
+  mat4.translate(temp, temp, [-center[0], -center[1], -center[2]]);
+  mat4.multiply(modelMatrix, temp, modelMatrix);
+  drawScene();
+}
+
+function mirrorCube() {
+  const plane = document.getElementById("mirrorPlane").value;
+
+  const pre = mat4.create();
+  const post = mat4.create();
+  const reflect = mat4.create();
+
+  mat4.translate(pre, pre, [-tx, -ty, -tz]);
+  mat4.translate(post, post, [tx, ty, tz]);
+
+  if (plane === "Oxy") {
+    mat4.scale(reflect, reflect, [1, 1, -1]);
+  } else if (plane === "Oxz") {
+    mat4.scale(reflect, reflect, [1, -1, 1]);
+  } else if (plane === "Oyz") {
+    mat4.scale(reflect, reflect, [-1, 1, 1]);
+  }
+
+  const temp = mat4.create();
+  mat4.multiply(temp, reflect, pre);
+  mat4.multiply(temp, post, temp);
+  mat4.multiply(modelMatrix, temp, modelMatrix);
+  drawScene();
+}
+  </script>
+</body>
+</html>

@@ -1,201 +1,7 @@
-<!-- vẽ khối lập phương với mỗi chức năng có 1 nút bấm riêng biệt -->
 
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>ĐỀ TÀI 1: WEBGL MODEL TRANSFORMATION</title>
-  <style>
-    body {
-  font-family: Arial, sans-serif;
-  background-color: #f5f7fa;
-  margin: 0;
-  padding: 20px;
-  color: #333;
-}
-
-.web-title {
-  text-align: center;
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 30px;
-  color: #2c3e50;
-}
-
-.display {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-  align-items: flex-start;
-}
-
-/* Canvas styling */
-#glcanvas {
-  border: 2px solid #444;
-  border-radius: 8px;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-/* Controls container */
-.controls {
-  background-color: #ffffff;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  min-width: 300px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  flex: 1;
-}
-
-.controls > div {
-  margin-bottom: 15px;
-}
-
-.controls label {
-  display: inline-block;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-
-.controls input {
-  padding: 5px;
-  margin: 3px 0;
-  width: 60px;
-  border: 1px solid #aaa;
-  border-radius: 4px;
-}
-
-.controls button {
-  margin-left: 5px;
-  margin-top: 5px;
-  padding: 6px 10px;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.controls button:hover {
-  background-color: #2980b9;
-}
-
-/* Ma trận hiển thị */
-.matrices-info {
-  margin-top: 30px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-}
-
-.matrix {
-  background-color: #fff;
-  border: 1px solid #ddd;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  width: 250px;
-  min-height: 150px;
-}
-
-.matrix h3 {
-  font-size: 16px;
-  margin-bottom: 10px;
-  color: #2c3e50;
-  text-align: center;
-}
-
-.matrix pre {
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  color: #333;
-}
-
-  </style>
-</head>
-<body>
-  <h1 class="web-title">ĐỀ TÀI 1: WEBGL MODEL TRANSFORMATION</h1>
-  <div class ="display">
-      <canvas id="glcanvas" width="640" height="480"></canvas>
-
-  <div class="controls">
-    <div>
-      Cạnh a: <input type="number" id="edgeLength" value="1" step="0.1" min="0.1">
-    </div>
-    <div>
-      Tx: <input type="number" id="tx" value="0" step="0.1">
-      Ty: <input type="number" id="ty" value="0" step="0.1">
-      Tz: <input type="number" id="tz" value="0" step="0.1">
-      <button onclick="resetTransform();applyTranslation()">Tịnh tiến</button>
-    </div>
-    <div>
-      Tỉ lệ s: <input type="number" id="scale" value="1" step="0.1" min="0.1">
-      <button onclick="resetTransform();applyScale()">Tỉ lệ</button>
-    </div>
-    <div>
-      Đối xứng qua:
-      <label><input type="radio" name="mirrorPlane" value="Oxy" checked>Oxy</label>
-      <label><input type="radio" name="mirrorPlane" value="Oxz">Oxz</label>
-      <label><input type="radio" name="mirrorPlane" value="Oyz">Oyz</label>
-      <button onclick="resetTransform();applyMirror()">Đối xứng</button>
-    </div>
-
-     <!-- Quay quanh AB -->
-      <div style="margin-top: 10px;">
-        <label>A(xa, ya):</label>
-        <input type="number" id="xa" step="0.1" placeholder="Nhập x của A" title="Tọa độ x của điểm A" />
-        <input type="number" id="ya" step="0.1" placeholder="Nhập y của A" title="Tọa độ y của điểm A" />
-        <br />
-        <label>B(xb, yb):</label>
-        <input type="number" id="xb" step="0.1" placeholder="Nhập x của B" title="Tọa độ x của điểm B" />
-        <input type="number" id="yb" step="0.1" placeholder="Nhập y của B" title="Tọa độ y của điểm B" />
-        <br />
-        <label>Góc b (độ):</label>
-        <input type="number" id="angleAB" step="1" placeholder="Góc quay" title="Góc quay quanh đoạn AB (độ)" />
-        <button onclick="resetTransform();rotateAroundAB()">Quay quanh AB</button>
-      </div>
-    <div>
-      <button onclick="resetTransform()">Reset biến đổi</button>
-      <button onclick="drawScene()">Vẽ khối lập phương</button>
-    </div>
-  </div>
-    </div>
-
-    <div class ="matrices-info">
-      <div class="matrix">
-<h3>Translation Matrix</h3>
-<pre id="translationMatrix"></pre>
-</div>
-<div class="matrix">
-<h3>Scale Matrix</h3>
-<pre id="scaleMatrix"></pre>
-</div>
-<div class="matrix">
-<h3>Mirro Matrix</h3>
-<pre id="mirrorMatrix"></pre>
-</div>
-<div class="matrix">
-<h3>Rotation Matrix</h3>
-<pre id="rotationMatrix"></pre>
-</div>
-      
-    </div>
-  
-  
-
-  <script src="https://cdn.jsdelivr.net/npm/gl-matrix@2.8.1/dist/gl-matrix-min.js"></script>
-  <script>
     const canvas = document.getElementById("glcanvas");
     const gl = canvas.getContext("webgl");
     if (!gl) alert("WebGL không được hỗ trợ!");
-    
 
     const vsSource = `
       attribute vec3 aPosition;
@@ -355,11 +161,6 @@
       let tx = parseFloat(document.getElementById("tx").value);
       let ty = parseFloat(document.getElementById("ty").value);
       let tz = parseFloat(document.getElementById("tz").value);
-      var translationMatrix = mat4.create();
-      // Tạo ma trận tỉ lệ
-      mat4.translate(translationMatrix, translationMatrix, [tx,ty,tz]);
-      var translationMatrixStr = getMatrixAsString(translationMatrix);
-      document.getElementById("translationMatrix").innerText = translationMatrixStr;
       mat4.translate(modelMatrix, modelMatrix, [tx, ty, tz]);
       drawScene();
     }
@@ -367,12 +168,6 @@
     // Áp dụng tỉ lệ, nhân vào ma trận model hiện tại
     function applyScale() {
       let s = parseFloat(document.getElementById("scale").value);
-      var scaleMatrix = mat4.create();
-      // Tạo ma trận tỉ lệ
-      mat4.scale(scaleMatrix, scaleMatrix, [s, s, s]);
-      var scaleMatrixStr = getMatrixAsString(scaleMatrix);
-      document.getElementById("scaleMatrix").innerText = scaleMatrixStr;
-
       mat4.scale(modelMatrix, modelMatrix, [s, s, s]);
       drawScene();
     }
@@ -389,8 +184,6 @@
   } else if (plane === "Oyz") {
     mat4.scale(mirrorMatrix, mirrorMatrix, [-1, 1, 1]);
   }
-  var mirrorMatrixStr = getMatrixAsString(mirrorMatrix);
-      document.getElementById("mirrorMatrix").innerText = mirrorMatrixStr;
 
   mat4.multiply(modelMatrix,  mirrorMatrix, modelMatrix);
    
@@ -398,8 +191,11 @@
 }
 
 
-    
-
+    // Reset ma trận biến đổi về ma trận đơn vị
+    function resetTransform() {
+      modelMatrix = mat4.create();
+      drawScene();
+    }
     function rotateAroundAB() {
   const xa = parseFloat(document.getElementById('xa').value);
   const ya = parseFloat(document.getElementById('ya').value);
@@ -418,65 +214,28 @@
   mat4.rotate(rotation, rotation, angleRad, axis);           // quay quanh AB
   mat4.translate(rotation, rotation, [-xa, -ya, 0]);          // trả lại vị trí gốc
 
-  var rotationMatrixStr = getMatrixAsString(rotation);
-  document.getElementById("rotationMatrix").innerText = rotationMatrixStr;
-
-  
-  mat4.multiply(modelMatrix, rotation, modelMatrix);
+  // Áp dụng lên transformedVertices
+  transformedVertices = transformedVertices.map(v => {
+    const out = vec4.transformMat4([], [v.x, v.y, v.z, 1], rotation);
+    return { x: out[0], y: out[1], z: out[2] };
+  });
 
   // Vẽ lại cube và đường thẳng AB
-  drawScene();
+  drawScence();
   drawLineAB([xa, ya, 0], [xb, yb, 0]);
 }
 
 // Vẽ lại trục AB bằng màu trắng
 function drawLineAB(a, b) {
-  
   const abVertices = new Float32Array([...a, ...b]);
-
-  // Tạo buffer và gán dữ liệu
   const abBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, abBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, abVertices, gl.STATIC_DRAW);
-
-  // Thiết lập thuộc tính vị trí đỉnh
   gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(aPosition);
 
-  // Gán màu trắng cho uniform uColor (RGB: 1, 1, 1)
-  gl.uniform3f(uColor, 1.0, 1.0, 1.0);
-
-  // Vẽ đoạn thẳng gồm 2 điểm
+  gl.uniform3f(uColor, 1, 1, 1); // Màu trắng
   gl.drawArrays(gl.LINES, 0, 2);
 }
 
-function getMatrixAsString(matrix) {
-            var matrixStr = "";
-            for (var i = 0; i < 4; i++) {
-                for (var j = 0; j < 4; j++) {
-                    matrixStr += matrix[j * 4 + i].toFixed(3) + "\t";
-                }
-                matrixStr += "\n";
-            }
-            return matrixStr;
-        }
-
-        // Reset ma trận biến đổi về ma trận đơn vị
-    function resetTransform() {
-      modelMatrix = mat4.create();
-      document.getElementById("translationMatrix").innerText = "";
-      document.getElementById("scaleMatrix").innerText = "";
-      document.getElementById("mirrorMatrix").innerText = "";
-      document.getElementById("rotationMatrix").innerText = "";
-      document.getElementById("edgeLength").value = 1;
-
-    
-      drawScene();
-    }
-
     drawScene(); // Vẽ lần đầu
-  </script>
-</body>
-</html>
-
-

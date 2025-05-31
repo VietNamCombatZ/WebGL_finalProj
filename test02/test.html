@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Khối lập phương và các phép biến đổi</title>
+  <style>
+    canvas { border: 1px solid black; }
+    .controls {
+      margin-top: 10px;
+    }
+    .controls > div {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Vẽ khối lập phương và các phép biến đổi</h2>
+  <canvas id="glcanvas" width="500" height="500"></canvas>
+
+  <div class="controls">
+    <!-- Nhập cạnh a -->
+    <div>
+      <label>Nhập cạnh a:</label>
+      <input type="number" id="inputA" value="1" step="0.1">
+      <button onclick="createCube()">Vẽ khối lập phương</button>
+    </div>
+
+    <!-- Tịnh tiến -->
+    <div>
+      <label>Tịnh tiến (x, y, z):</label>
+      <input type="number" id="tx" value="0" step="0.1">
+      <input type="number" id="ty" value="0" step="0.1">
+      <input type="number" id="tz" value="0" step="0.1">
+      <button onclick="translateCube()">Tịnh tiến</button>
+    </div>
+
+    <!-- Tỉ lệ -->
+    <div>
+      <label>Tỉ lệ s:</label>
+      <input type="number" id="scale" value="1" step="0.1">
+      <button onclick="scaleCube()">Biến đổi tỉ lệ</button>
+    </div>
+
+    <!-- Đối xứng -->
+    <div>
+      <label>Đối xứng qua mặt phẳng:</label>
+      <select id="mirrorPlane">
+        <option value="xy">Oxy</option>
+        <option value="xz">Oxz</option>
+        <option value="yz">Oyz</option>
+      </select>
+      <button onclick="mirrorCube()">Đối xứng</button>
+    </div>
+
+    <!-- Quay quanh AB -->
+    <div>
+      <label>A(xa, ya):</label>
+      <input type="number" id="xa" step="0.1">
+      <input type="number" id="ya" step="0.1">
+      <br>
+      <label>B(xb, yb):</label>
+      <input type="number" id="xb" step="0.1">
+      <input type="number" id="yb" step="0.1">
+      <br>
+      <label>Góc b (độ):</label>
+      <input type="number" id="angleAB" step="1">
+      <button onclick="rotateAroundAB()">Quay quanh AB</button>
+    </div>
+  </div>
+
+  <script type="module" src="cube-transform.js"></script>
+</body>
+</html>

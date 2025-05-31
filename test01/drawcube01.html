@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebGL Cube Transformation</title>
+  <style>
+    canvas { border: 1px solid black; }
+    .transform-group { margin-top: 10px; }
+    label { margin-right: 10px; }
+    input[type="number"] { width: 50px; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
+</head>
+<body>
+  <h2>Biến đổi khối lập phương bằng WebGL</h2>
+  <canvas id="glcanvas" width="500" height="500"></canvas>
+
+  <div>
+    <label>Nhập giá trị a:</label>
+    <input type="number" id="input-a" value="10">
+  </div>
+
+  <form id="transform-form">
+    <div class="transform-group">
+      <input type="radio" name="transform" value="translate" checked> Tịnh tiến
+      X: <input type="number" id="translateX" value="0">
+      Y: <input type="number" id="translateY" value="0">
+      Z: <input type="number" id="translateZ" value="0">
+    </div>
+
+    <div class="transform-group">
+      <input type="radio" name="transform" value="reflectOxy"> Đối xứng qua Oxy
+      <input type="radio" name="transform" value="reflectOxz"> Oxz
+      <input type="radio" name="transform" value="reflectOyz"> Oyz
+    </div>
+
+    <div class="transform-group">
+      <input type="radio" name="transform" value="scale"> Tỉ lệ
+      X: <input type="number" id="scaleX" value="1">
+      Y: <input type="number" id="scaleY" value="1">
+      Z: <input type="number" id="scaleZ" value="1">
+    </div>
+
+    <div class="transform-group">
+      <input type="radio" name="transform" value="rotateLine"> Quay quanh đường thẳng qua A(xA,yA), B(xB,yB)
+      A: (<input type="number" id="xA" value="0">,
+         <input type="number" id="yA" value="0">),
+      B: (<input type="number" id="xB" value="1">,
+         <input type="number" id="yB" value="1">)
+    </div>
+
+    <button type="submit">Thực hiện phép biến đổi</button>
+  </form>
+
+  <h3>Ma trận biến đổi:</h3>
+  <pre id="matrix-output"></pre>
+
+  <script src="cube-webgl.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebGL Cube Transformations</title>
+  <style>
+    canvas { border: 1px solid black; display: block; margin-bottom: 10px;}
+    button { margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <canvas id="glcanvas" width="600" height="600"></canvas>
+  
+  <button onclick="applyTranslate()">Tịnh tiến</button>
+  <button onclick="applyScale()">Tỉ lệ</button>
+  <button onclick="applyReflect()">Đối xứng</button>
+  <button onclick="applyRotate()">Quay</button>
+
+  <script src="cube.js"></script>
+</body>
+</html>

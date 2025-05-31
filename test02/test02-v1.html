@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Trục tọa độ WebGL</title>
+  <style>
+    canvas { background: black; display: block; margin: auto; }
+  </style>
+</head>
+<body>
+  <canvas id="glcanvas" width="640" height="480"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/gl-matrix@2.8.1/dist/gl-matrix-min.js"></script>
+  <script>
+    const canvas = document.getElementById('glcanvas');
+    const gl = canvas.getContext('webgl');
+
+    if (!gl) {
+      alert('WebGL không được hỗ trợ!');
+    }
+
+    // Shader nguồn
+    const vsSource = `
+      attribute vec3 aPosition;
+      uniform mat4 uMatrix;
+      void main() {
+        gl_Position = uMatrix * vec4(aPosition, 1.0);
+      }
+    `;
+
+    const fsSource = `
+      precision mediump float;
+      uniform vec3 uColor;
+      void main() {
+        gl_FragColor = vec4(uColor, 1.0);
+      }
+    `;
+
+    // Tạo shader
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+      }
+      return shader;
+    }
+
+    // Tạo chương trình
+    const vShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
+    const fShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+    const program = gl.createProgram();
+    gl.attachShader(program, vShader);
+    gl.attachShader(program, fShader);
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    // Lấy vị trí biến trong shader
+    const aPosition = gl.getAttribLocation(program, 'aPosition');
+    const uColor = gl.getUniformLocation(program, 'uColor');
+    const uMatrix = gl.getUniformLocation(program, 'uMatrix');
+
+    // Dữ liệu trục tọa độ
+    const vertices = new Float32Array([
+      // Trục X
+      0, 0, 0,   1, 0, 0,
+      // Trục Y
+      0, 0, 0,   0, 1, 0,
+      // Trục Z
+      0, 0, 0,   0, 0, 1,
+    ]);
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(aPosition);
+    gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+
+    // Ma trận phối cảnh và view
+    const matrix = mat4.create();
+    mat4.perspective(matrix, 45 * Math.PI / 180, canvas.width / canvas.height, 0.1, 10);
+    mat4.translate(matrix, matrix, [0, 0, -2]); // Lùi camera để nhìn thấy trục
+
+    gl.uniformMatrix4fv(uMatrix, false, matrix);
+
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Vẽ trục X (đỏ)
+    gl.uniform3f(uColor, 1, 0, 0);
+    gl.drawArrays(gl.LINES, 0, 2);
+
+    // Vẽ trục Y (xanh lá)
+    gl.uniform3f(uColor, 0, 1, 0);
+    gl.drawArrays(gl.LINES, 2, 2);
+
+    // Vẽ trục Z (xanh dương)
+    gl.uniform3f(uColor, 0, 0, 1);
+    gl.drawArrays(gl.LINES, 4, 2);
+  </script>
+</body>
+</html>
