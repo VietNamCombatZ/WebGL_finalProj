@@ -126,19 +126,26 @@
       <canvas id="glcanvas" width="640" height="480"></canvas>
 
   <div class="controls">
+    <!-- Nhập cạnh khối lập phương -->
     <div>
       Cạnh a: <input type="number" id="edgeLength" value="1" step="0.1" min="0.1">
     </div>
+
+    <!-- Tịnh tiến -->
     <div>
       Tx: <input type="number" id="tx" value="0" step="0.1">
       Ty: <input type="number" id="ty" value="0" step="0.1">
       Tz: <input type="number" id="tz" value="0" step="0.1">
       <button onclick="resetTransform();applyTranslation()">Tịnh tiến</button>
     </div>
+
+    <!-- Tỉ lệ -->
     <div>
       Tỉ lệ s: <input type="number" id="scale" value="1" step="0.1" min="0.1">
       <button onclick="resetTransform();applyScale()">Tỉ lệ</button>
     </div>
+    
+    <!-- Đối xứng qua mặt phẳng -->
     <div>
       Đối xứng qua:
       <label><input type="radio" name="mirrorPlane" value="Oxy" checked>Oxy</label>
@@ -178,7 +185,7 @@
 <pre id="scaleMatrix"></pre>
 </div>
 <div class="matrix">
-<h3>Mirro Matrix</h3>
+<h3>Mirror Matrix</h3>
 <pre id="mirrorMatrix"></pre>
 </div>
 <div class="matrix">
@@ -192,11 +199,12 @@
 
   <script src="https://cdn.jsdelivr.net/npm/gl-matrix@2.8.1/dist/gl-matrix-min.js"></script>
   <script>
+    // Khởi tạo WebGL và kiểm tra hỗ trợ
     const canvas = document.getElementById("glcanvas");
     const gl = canvas.getContext("webgl");
     if (!gl) alert("WebGL không được hỗ trợ!");
     
-
+// Thiết lập các shader và chương trình WebGL
     const vsSource = `
       attribute vec3 aPosition;
       uniform mat4 uMatrix;
@@ -204,6 +212,7 @@
         gl_Position = uMatrix * vec4(aPosition, 1.0);
       }
     `;
+    // Fragment shader để vẽ màu sắc
     const fsSource = `
       precision mediump float;
       uniform vec3 uColor;
@@ -212,6 +221,7 @@
       }
     `;
 
+    // Hàm tạo shader, biên dịch và kiểm tra lỗi
     function createShader(gl, type, source) {
       const shader = gl.createShader(type);
       gl.shaderSource(shader, source);
@@ -222,6 +232,7 @@
       return shader;
     }
 
+    // Tạo và liên kết shader, chương trình
     const vShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
     const fShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
     const program = gl.createProgram();
@@ -229,20 +240,22 @@
     gl.attachShader(program, fShader);
     gl.linkProgram(program);
     gl.useProgram(program);
+    // Lấy vị trí các thuộc tính và uniform
 
     const aPosition = gl.getAttribLocation(program, "aPosition");
     const uColor = gl.getUniformLocation(program, "uColor");
     const uMatrix = gl.getUniformLocation(program, "uMatrix");
 
+    // Tạo bộ đệm cho trục tọa độ và khối lập phương
     const axisVertices = new Float32Array([
-      0,0,0, 1,0,0,
-      0,0,0, 0,1,0,
-      0,0,0, 0,0,1,
+      0,0,0, 10,0,0,
+      0,0,0, 0,10,0,
+      0,0,0, 0,0,10,
     ]);
     const axisBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, axisBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, axisVertices, gl.STATIC_DRAW);
-
+// Thiết lập thuộc tính vị trí đỉnh
     const cubeIndices = new Uint16Array([
       0,1,2, 0,2,3, 4,5,6, 4,6,7,
       8,9,10, 8,10,11, 12,13,14, 12,14,15,
@@ -251,12 +264,12 @@
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cubeIndices, gl.STATIC_DRAW);
-
+// Thiết lập màu sắc cho các mặt của khối lập phương
     const faceColors = [
       [0.7, 0.4, 0.7], [0.8, 0.6, 0.5], [0.2, 0.4, 0.7],
       [0.5, 0.4, 0.3], [0.5, 0.6, 0.2], [0.7, 0.3, 0.4],
     ];
-
+// Chuyển đổi màu sắc sang định dạng Float32Array
     const projection = mat4.create();
     const view = mat4.create();
     const baseMatrix = mat4.create();
@@ -269,7 +282,7 @@
 
     function createCubeVertices(a) {
       
-    //v3
+    
     const x = 0, y = 0, z = 0; // tọa độ gốc
   const x1 = x,     x2 = x + a;
   const y1 = y,     y2 = y + a;
@@ -313,7 +326,9 @@
     x1, y2, z2,
   ]);
     }
-
+// Hàm vẽ toàn bộ cảnh
+    // Vẽ cảnh, bao gồm trục tọa độ và khối lập phương
+    
     function drawScene() {
       let a = parseFloat(document.getElementById("edgeLength").value);
 
@@ -399,7 +414,7 @@
 
 
     
-
+// Hàm quay khối lập phương quanh đoạn thẳng AB
     function rotateAroundAB() {
   const xa = parseFloat(document.getElementById('xa').value);
   const ya = parseFloat(document.getElementById('ya').value);
@@ -450,6 +465,7 @@ function drawLineAB(a, b) {
   gl.drawArrays(gl.LINES, 0, 2);
 }
 
+// Hàm chuyển đổi ma trận thành chuỗi để hiển thị
 function getMatrixAsString(matrix) {
             var matrixStr = "";
             for (var i = 0; i < 4; i++) {
